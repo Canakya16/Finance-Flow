@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4776E6">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FinanceFlow">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234776E6'/><text x='50%' y='50%' font-size='50' text-anchor='middle' dominant-baseline='central'>💸</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234776E6'/><text x='50%' y='50%' font-size='50' text-anchor='middle' dominant-baseline='central'>💸</text></svg>">
+
+    <title>Finance Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #4776E6; --secondary: #8E54E9; --danger: #ff4757; --success: #2ed573; --warning: #ffa502; --text: #2f3542; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); min-height: 100vh; padding: 15px; color: var(--text); padding-bottom: 80px; }
+        .container { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); width: 100%; max-width: 800px; margin: 0 auto; padding: 25px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 20px; font-weight: 600; background: -webkit-linear-gradient(var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        .alert-box { display: none; background: rgba(255, 71, 87, 0.1); color: var(--danger); padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 0.85em; border-left: 4px solid var(--danger); }
+        .alert-box.active { display: block; animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-5px);} 75% {transform: translateX(5px);} }
+
+        .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
+
+        .card { background: #fff; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        label { font-size: 0.85em; font-weight: 600; color: #57606f; margin-bottom: 5px; display: block; }
+
+        select, input { width: 100%; padding: 14px; margin-bottom: 15px; border: 2px solid #f1f2f6; border-radius: 12px; font-size: 1em; background: #f8f9fa; outline: none; transition: border 0.3s; }
+        select:focus, input:focus { border-color: var(--primary); background: #fff; }
+
+        button { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 1em; font-weight: 600; color: #fff; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: transform 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-simpan { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .btn-review { background: #2f3542; margin-top: 15px; }
+        .btn-reset { background: transparent; color: var(--danger); border: 2px solid var(--danger); margin-top: 15px; }
+
+        .budget-status { margin-top: 15px; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.8em; margin-bottom: 5px; font-weight: 600; color: #57606f; }
+        .progress-bar-bg { width: 100%; background: #f1f2f6; border-radius: 10px; height: 10px; margin-bottom: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 10px; transition: width 0.4s ease, background-color 0.4s ease; }
+        
+        .chart-container { position: relative; height: 200px; width: 100%; margin-top: 10px; margin-bottom: 20px;}
+        .riwayat-container { margin-top: 15px; max-height: 250px; overflow-y: auto; }
+        .riwayat-item { display: flex; justify-content: space-between; padding: 12px 10px; border-bottom: 1px solid #f1f2f6; font-size: 0.85em; align-items: center;}
+        .text-pemasukan { color: var(--success); font-weight: bold; text-align: right;}
+        .text-pengeluaran { color: var(--danger); font-weight: bold; text-align: right;}
+        .deskripsi-teks { color: #57606f; font-size: 0.9em; display: block; }
+        .tanggal-teks { font-size: 0.75em; color: #a4b0be; display: block; margin-top: 2px;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Catatan Keuangan</h2>
+    
+    <div id="alertBox" class="alert-box"></div>
+
+    <div class="grid">
+        <div class="card">
+            <label>Tanggal</label>
+            <input type="date" id="tanggal">
+
+            <label>Jenis Transaksi</label>
+            <select id="jenis">
+                <option value="pengeluaran">📉 Pengeluaran</option>
+                <option value="pemasukan">💵 Pemasukan</option>
+            </select>
+
+            <label>Pos Anggaran (Khusus Pengeluaran)</label>
+            <select id="kategori">
+                <option value="kebutuhan">Kebutuhan Pokok (50%)</option>
+                <option value="tabungan">Tabungan (30%)</option>
+                <option value="gaya_hidup">Gaya Hidup (20%)</option>
+                <option value="-">- (Pilih ini jika Pemasukan)</option>
+            </select>
+
+            <label>Deskripsi</label>
+            <input type="text" id="deskripsi" placeholder="Contoh: Bensin, Makan, Gaji">
+
+            <label>Nominal (Rp)</label>
+            <input type="number" id="nominal" inputmode="numeric" placeholder="Contoh: 50000">
+            
+            <button class="btn-simpan" onclick="tambahData()">Simpan Transaksi</button>
+        </div>
+
+        <div class="card">
+            <div class="chart-container">
+                <canvas id="grafikKeuangan"></canvas>
+            </div>
+
+            <div class="budget-status" id="budgetStatus"></div>
+            
+            <div class="riwayat-container" id="riwayatList"></div>
+
+            <button class="btn-review" onclick="siapkanReview()">✨ Generate AI Review</button>
+            <button class="btn-reset" onclick="resetData()">Reset Data Bulan Ini</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set default tanggal ke hari ini
+    document.getElementById('tanggal').valueAsDate = new Date();
+
+    let dataKeuangan = JSON.parse(localStorage.getItem('keuanganFlowFinal')) || {
+        pemasukan: 0, pengeluaran: { kebutuhan: 0, tabungan: 0, gaya_hidup: 0 }, riwayat: []
+    };
+    let chartInstance = null;
+
+    const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+
+    document.getElementById('jenis').addEventListener('change', function() {
+        let kategori = document.getElementById('kategori');
+        if (this.value === 'pemasukan') {
+            kategori.value = '-';
+            kategori.disabled = true;
+        } else {
+            kategori.disabled = false;
+            kategori.value = 'kebutuhan';
+        }
+    });
+
+    function simpanKeStorage() {
+        localStorage.setItem('keuanganFlowFinal', JSON.stringify(dataKeuangan));
+        updateUI();
+    }
+
+    function tambahData() {
+        let tanggal = document.getElementById('tanggal').value;
+        let jenis = document.getElementById('jenis').value;
+        let kategori = document.getElementById('kategori').value;
+        let deskripsi = document.getElementById('deskripsi').value.trim() || 'Tanpa Deskripsi';
+        let nominal = parseFloat(document.getElementById('nominal').value);
+
+        if (!tanggal) return alert("Pilih tanggal terlebih dahulu!");
+        if (!nominal || nominal <= 0) return alert("Masukkan nominal yang valid!");
+
+        if (jenis === 'pemasukan') {
+            dataKeuangan.pemasukan += nominal;
+            kategori = 'Pemasukan';
+        } else {
+            dataKeuangan.pengeluaran[kategori] += nominal;
+        }
+        
+        dataKeuangan.riwayat.unshift({ tanggal, jenis, kategori, deskripsi, nominal });
+        if(dataKeuangan.riwayat.length > 50) dataKeuangan.riwayat.pop(); // Simpan 50 histori terakhir
+        
+        document.getElementById('deskripsi').value = '';
+        document.getElementById('nominal').value = '';
+        simpanKeStorage();
+    }
+
+    function updateUI() {
+        renderBudgetProgress();
+        renderGrafik();
+        renderRiwayat();
+    }
+
+    function renderBudgetProgress() {
+        let p = dataKeuangan.pemasukan;
+        let limits = { kebutuhan: p * 0.50, tabungan: p * 0.30, gaya_hidup: p * 0.20 };
+        let statusHtml = '';
+        let alerts = [];
+
+        ['kebutuhan', 'tabungan', 'gaya_hidup'].forEach(kat => {
+            let limit = limits[kat];
+            let terpakai = dataKeuangan.pengeluaran[kat];
+            let persen = limit > 0 ? (terpakai / limit) * 100 : 0;
+            if (persen > 100) persen = 100;
+
+            let warna = '#2ed573';
+            if (persen >= 80 && persen < 100) warna = '#ffa502';
+            if (persen >= 100) { warna = '#ff4757'; if (limit > 0) alerts.push(`Pos <b>${kat.replace('_', ' ').toUpperCase()}</b> melebihi budget!`); }
+
+            if (p > 0) {
+                statusHtml += `
+                    <div class="progress-label">
+                        <span>${kat.replace('_', ' ').toUpperCase()}</span>
+                        <span>${formatRp(terpakai)} / ${formatRp(limit)}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-fill" style="width: ${persen}%; background-color: ${warna};"></div>
+                    </div>
+                `;
+            }
+        });
+
+        document.getElementById('budgetStatus').innerHTML = p > 0 ? statusHtml : '<div style="text-align:center; font-size:0.8em; color:#ccc; margin-bottom:10px;">Masukkan pemasukan untuk melihat target budget.</div>';
+
+        let alertBox = document.getElementById('alertBox');
+        if (alerts.length > 0) { alertBox.innerHTML = `⚠️ <strong>Peringatan Budget:</strong><br>` + alerts.join('<br>'); alertBox.classList.add('active'); }
+        else { alertBox.classList.remove('active'); }
+    }
+
+    function renderRiwayat() {
+        let list = document.getElementById('riwayatList');
+        if (dataKeuangan.riwayat.length === 0) {
+            list.innerHTML = '<div style="text-align:center; font-size:0.8em; color:#ccc;">Belum ada transaksi</div>';
+            return;
+        }
+
+        list.innerHTML = '';
+        dataKeuangan.riwayat.forEach(item => {
+            let isMasuk = item.jenis === 'pemasukan';
+            
+            // Format tanggal agar lebih enak dibaca
+            let dateObj = new Date(item.tanggal);
+            let tglFormat = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            let html = `
+                <div class="riwayat-item">
+                    <div>
+                        <strong>${item.kategori.replace('_', ' ').toUpperCase()}</strong>
+                        <span class="deskripsi-teks">${item.deskripsi}</span>
+                        <span class="tanggal-teks">📅 ${tglFormat}</span>
+                    </div>
+                    <div class="${isMasuk ? 'text-pemasukan' : 'text-pengeluaran'}">
+                        ${isMasuk ? '+' : '-'}${formatRp(item.nominal)}
+                    </div>
+                </div>
+            `;
+            list.innerHTML += html;
+        });
+    }
+
+    function renderGrafik() {
+        let ctx = document.getElementById('grafikKeuangan').getContext('2d');
+        let sisa = Math.max(0, dataKeuangan.pemasukan - (dataKeuangan.pengeluaran.kebutuhan + dataKeuangan.pengeluaran.tabungan + dataKeuangan.pengeluaran.gaya_hidup));
+        
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Sisa Saldo', 'Kebutuhan', 'Tabungan', 'Gaya Hidup'],
+                datasets: [{
+                    data: [sisa, dataKeuangan.pengeluaran.kebutuhan, dataKeuangan.pengeluaran.tabungan, dataKeuangan.pengeluaran.gaya_hidup],
+                    backgroundColor: ['#2ed573', '#ff4757', '#4776E6', '#ffa502'],
+                    borderWidth: 0
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { family: 'Poppins', size: 10 }, usePointStyle: true, boxWidth: 6 } } }, cutout: '70%' }
+        });
+    }
+
+    function siapkanReview() {
+        let riwayatTeks = dataKeuangan.riwayat.slice(0, 10).map(r => `- [${r.tanggal}] ${r.deskripsi} (${r.kategori}): ${r.jenis==='pemasukan'?'+':'-'}${formatRp(r.nominal)}`).join('\n');
+        let teks = `Halo AI, tolong review keuangan saya bulan ini:\n\nTotal Pemasukan: ${formatRp(dataKeuangan.pemasukan)}\nKebutuhan (Target 50%): ${formatRp(dataKeuangan.pengeluaran.kebutuhan)}\nTabungan (Target 30%): ${formatRp(dataKeuangan.pengeluaran.tabungan)}\nGaya Hidup (Target 20%): ${formatRp(dataKeuangan.pengeluaran.gaya_hidup)}\n\n10 Transaksi Terakhir:\n${riwayatTeks || 'Belum ada data'}\n\nBerikan analisis padat!`;
+        
+        navigator.clipboard.writeText(teks).then(() => alert("✅ Data berhasil disalin! Silakan paste di chat AI.")).catch(() => alert("Gagal menyalin data."));
+    }
+
+    function resetData() {
+        if(confirm("Hapus semua data bulan ini?")) {
+            dataKeuangan = { pemasukan: 0, pengeluaran: { kebutuhan: 0, tabungan: 0, gaya_hidup: 0 }, riwayat: [] };
+            simpanKeStorage();
+        }
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>
